@@ -1,34 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
-const BASE_URL = 'http://192.168.1.6:8002/api'; // 🔁 change this once
-
-// ─── Core fetcher ────────────────────────────────────────────────
-
-// const request = async (endpoint, options = {}, requiresAuth = false) => {
-//   const headers = { 'Content-Type': 'application/json', ...options.headers };
-
-//   if (requiresAuth) {
-//     const token = await AsyncStorage.getItem('token');
-//     if (token) headers['Authorization'] = `Bearer ${token}`;
-//   }
-
-//   const response = await fetch(`${BASE_URL}${endpoint}`, {
-//     ...options,
-//     headers,
-//   });
-
-//   const data = await response.json();
-
-//   if (!response.ok) {
-//     // ✅ your API uses "msg" not "message"
-//     throw { status: response.status, message: data?.msg || data?.message || 'Something went wrong' };
-//   }
-
-//   return data;
-// };
-
+const BASE_URL = 'https://www.videosavezone.com/public/dateapp-laravel/public/api'; 
 
 const request = async (
   endpoint,
@@ -38,9 +11,13 @@ const request = async (
   try {
     const token = await AsyncStorage.getItem('token');
 
+    const isFormData = options.body instanceof FormData;
+
     const headers = {
       Accept: 'application/json',
-      'Content-Type': 'application/json',
+      ...(isFormData
+        ? {}
+        : { 'Content-Type': 'application/json' }),
       ...options.headers,
     };
 
@@ -51,12 +28,10 @@ const request = async (
     const response = await axios({
       url: `${BASE_URL}${endpoint}`,
       method: options.method || 'GET',
-      data: options.body ? JSON.parse(options.body) : undefined,
+      data: options.body || undefined,
       headers,
       timeout: 10000,
     });
-
-    console.log('AXIOS RESPONSE:', response.data);
 
     return response.data;
   } catch (error) {
@@ -101,26 +76,36 @@ export const publicApi = {
     }),
 };
 
-// ─── Protected (sends token automatically) ───────────────────────
+
 export const privateApi = {
-  getProfile: () =>
-    request('/user/profile', { method: 'GET' }, true),
-
-  updateProfile: (data) =>
-    request('/user/profile', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }, true),
-
-  getNearbyUsers: (filters) =>
-    request('/users/nearby', {
+  updateProfile: (formData) =>
+  request(
+    '/register-update-profile',
+    {
       method: 'POST',
-      body: JSON.stringify(filters),
-    }, true),
+      body: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    },
+    true
+  ),
+
+  updateInterests: (formData) =>
+  request(
+    '/Interests-update',
+    {
+      method: 'POST',
+      body: formData,
+    },
+    true
+  ),
+
+  getProfiles: () => request('/profiles', { method: 'GET' }, true),
 
   likeUser: (userId) =>
-    request(`/users/${userId}/like`, { method: 'POST' }, true),
+    request(`/users/like/${userId}`, { method: 'POST' }, true),
 
   dislikeUser: (userId) =>
-    request(`/users/${userId}/dislike`, { method: 'POST' }, true),
+    request(`/users/dislike/${userId}`, { method: 'POST' }, true),
 };

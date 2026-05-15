@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
   ScrollView, Animated, ActivityIndicator,
@@ -8,7 +8,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../../theme/colors';
-import { publicApi } from '../../utils/api';
+import { privateApi } from '../../utils/api';
+
+import { AuthContext } from '../../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -85,28 +87,36 @@ export default function InterestsScreen({ navigation }) {
     ]).start();
   };
 
-  const handleFinish = async () => {
-    if (selected.length < MIN_INTERESTS) {
-      setError(`Please pick at least ${MIN_INTERESTS} interests`);
-      return;
-    }
+ 
 
-    setLoading(true);
-    setError('');
-    try {
-      const token = await AsyncStorage.getItem('token');
-      await publicApi.updateInterests(selected, token);
-      // Navigate to main home — reset stack
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Home' }],
-      });
-    } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+
+ // ← adjust path if needed
+
+// inside your component:
+const { login } = useContext(AuthContext);
+
+const handleFinish = async () => {
+  if (selected.length < MIN_INTERESTS) {
+    setError(`Please pick at least ${MIN_INTERESTS} interests`);
+    return;
+  }
+
+  setLoading(true);
+  setError('');
+  try {
+    const newdata = { interests: selected };
+    await privateApi.updateInterests(newdata);
+
+    // Get user data that was saved during login/signup
+    const userData = await AsyncStorage.getItem('user');
+    await login(userData ? JSON.parse(userData) : {});
+
+  } catch (err) {
+    setError(err.message || 'Something went wrong. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const remaining = Math.max(0, MIN_INTERESTS - selected.length);
   const progressWidth = progressAnim.interpolate({

@@ -11,7 +11,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../../theme/colors';
-import { publicApi } from '../../utils/api';
+import { publicApi, privateApi } from '../../utils/api';
 
 const GENDERS = [
   { label: 'Male', value: 'male', icon: 'male' },
@@ -106,13 +106,14 @@ export default function ProfileSetupScreen({ navigation, route }) {
     if (!validate()) return;
     setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('token');
+      // const token = await AsyncStorage.getItem('token');
       const formData = new FormData();
       formData.append('name', fullName.trim());
       formData.append('occupation', occupation.trim());
       formData.append('city_id', selectedCity.id);
       formData.append('gender', gender);
       formData.append('dob', dob.toISOString().split('T')[0]);
+      // console.log('avatar', avatar)
       if (avatar) {
         formData.append('avatar', {
           uri: avatar,
@@ -121,8 +122,8 @@ export default function ProfileSetupScreen({ navigation, route }) {
         });
       }
 
-      console.log('formData', formData);
-      // await publicApi.updateProfile(formData, token);
+      // console.log('formData', formData);
+      await privateApi.updateProfile(formData);
       navigation.navigate('Interests');
     } catch (err) {
       console.log('Profile update error', err);

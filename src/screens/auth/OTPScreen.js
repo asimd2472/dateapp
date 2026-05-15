@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
   TextInput, Animated, ActivityIndicator,
@@ -9,6 +9,8 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../../theme/colors';
 import { publicApi } from '../../utils/api';
+
+import { AuthContext } from '../../context/AuthContext';
 
 const OTP_LENGTH = 4;
 const RESEND_SECONDS = 60;
@@ -25,6 +27,8 @@ export default function OTPScreen({ navigation, route }) {
 
   const inputRefs = useRef([]);
   const shakeAnim = useRef(new Animated.Value(0)).current;
+
+  const { login } = useContext(AuthContext);
 
   // ── Countdown timer ──────────────────────────────────────────
   useEffect(() => {
@@ -90,7 +94,16 @@ export default function OTPScreen({ navigation, route }) {
           await AsyncStorage.setItem('user_details', JSON.stringify(response.user_details));
         }
         // Navigate to ProfileSetup
-        navigation.navigate('ProfileSetup', { email, token: response.token });
+        // navigation.navigate('ProfileSetup', { email, token: response.token });
+
+        if (response?.profileStatus === 1) {
+          // Profile complete — go straight to Home
+          await login(response.user_details);
+        } else {
+          // Profile incomplete — continue setup flow
+          navigation.navigate('ProfileSetup', { email, token: response.token });
+        }
+
       } else {
         // API returned status 0 or no token
         const errMsg = response?.msg || 'Invalid OTP. Please try again.';
